@@ -1,0 +1,144 @@
+#! /usr/bin/python
+
+from curses import *
+
+def ai(w, g, i): #wizards, grid, income
+	pass
+
+def main(stdscr):
+	curs_set(1)
+	mousemask(ALL_MOUSE_EVENTS)
+#grid=[ [node node node ...] ...]
+#node=(side, power)
+#side=0, 1, 2 (neutral, P1, P2)
+#forcefield strength=0..10, 11 for HQ
+	grid=[
+[(2,11), (0,5), (0,5), (0,5), (0,5), ],
+[(0,5), (0,5), (0,5), (0,5), (0,5), ],
+[(0,5), (0,5), (0,5), (0,5), (0,5), ],
+[(0,5), (0,5), (0,5), (0,5), (0,5), ],
+[(0,5), (0,5), (0,5), (0,5), (1,11), ],
+]
+
+#wiz=[ side, location, MP, electricity ]
+	wizards=[
+[1, (4,4), 10, 10],
+[2, (0,0), 10, 10],
+]
+	turn=2
+	enemy=1
+	init_pair(1,COLOR_BLUE, COLOR_BLACK)
+	init_pair(3,COLOR_BLACK, COLOR_BLUE)
+	init_pair(2,COLOR_RED, COLOR_BLACK)
+	init_pair(4,COLOR_BLACK, COLOR_RED)
+	while True:
+		stdscr.erase()
+		if turn == 2:
+			turn=1
+			enemy=2
+		else:
+			turn=2
+			enemy=1
+	
+		#calculate income
+		income=0
+		for row in grid:
+			for (side, strength) in row:
+				if side == turn:
+					income=income+(strength-5)/2
+	
+		#status
+		stdscr.addstr(0,0,"PLAYER: "+str(turn),color_pair(turn+2))
+		py=1
+		income=0
+		land=9
+		hashq=False
+		for row in grid:
+			py=py+1
+			px=0
+			for (side, strength) in row:
+				if side == 0:
+					stdscr.addstr(py,px," 5")
+					px=px+3
+					continue
+				if side == turn:
+					if strength == 11:
+						hashq=True
+					income=income+((strength-5)/2.0)
+					land=land+1
+				if strength < 10: strength=" "+str(strength)
+				else: strength=str(strength)
+				pair=side
+				if wizards[side-1][1] == (py-2, px/3):
+					pair=pair+2
+				stdscr.addstr(py,px,strength,color_pair(pair))
+				px=px+3
+		income=-income
+		wizards[turn-1][3]=wizards[turn-1][3]+income
+		if wizards[turn-1][3] > 10:
+			wizards[turn-1][3]=10
+		py=py+1
+		stdscr.addstr(py,0,"MP: "+str(wizards[turn-1][2])+", ELC: "+str(wizards[turn-1][3])+", INC: "+str(income),color_pair(turn))
+
+		py=py+1
+		stdscr.move(py,0)
+		stdscr.clrtoeol()
+		if not hashq: #LOSE CONDITION
+			stdscr.addstr(py,0,"YOU LOSE",color_pair(turn+2))
+			stdscr.getch()
+			return
+		if wizards[turn-1][3]<0: #LOSE CONDITION
+			stdscr.addstr(py,0,"YOU LOSE",color_pair(turn+2))
+			stdscr.getch()
+			return
+		stdscr.addstr(py,0,"MOVE (cursor)/POWER (`=0, 1-9=1-9, 0=10)/q=quit/space=pass",color_pair(turn))
+		while True:
+			repeat=False
+			stdscr.refresh()
+			answ=stdscr.getkey()
+
+			try: answ=int(answ)
+			except: pass
+
+			(ly,lx)=wizards[turn-1][1]
+			(side, strength)=grid[ly][lx]
+
+			if answ == ' ': break
+			elif answ == 'q': return
+			elif answ == '`': answ=0
+			elif answ in range(1,10): pass
+			elif answ == 0: answ=10
+			elif answ == 'KEY_UP': ly=ly-1
+			elif answ == 'KEY_DOWN': ly=ly+1
+			elif answ == 'KEY_LEFT': lx=lx-1
+			elif answ == 'KEY_RIGHT': lx=lx+1
+			else: repeat="INVALID KEY"
+#			stdscr.addstr(py+1,0,"A: "+str(answ)+", xy"+repr((ly,lx)))
+#			stdscr.refresh()
+#			stdscr.getch()
+			if type(answ) == type(int()):
+				if strength == 11: repeat="CAN'T DESTROY HQ"
+				strength=answ
+			elif lx < 0 or lx > 4 or ly < 0 or ly > 4:
+				repeat="OUT OF BOUNDS"
+			else:
+				(side,strength)=grid[ly][lx]
+				if side != turn:
+					newMP=wizards[turn-1][2]-strength
+					if newMP < 0:
+						repeat="CAN'T BEAT THAT FORCE FIELD"
+					elif wizards[enemy-1][1]==(ly,lx):
+						repeat="ENEMY WIZARD PUTS UP TEMPORARY STRONG FORCE FIELD, CAN'T MOVE THERE"
+					else:
+						wizards[turn-1][2]=newMP
+			if repeat:
+				stdscr.move(py,0)
+				stdscr.clrtoeol()
+				stdscr.addstr(py,0,repeat,color_pair(turn))
+			else:
+				wizards[turn-1][1]=(ly,lx)
+				if strength == 11: wizards[turn-1][2]=land
+				side=turn
+				grid[ly][lx]=(side, strength)
+				break
+wrapper(main)

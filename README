@@ -1,0 +1,23 @@
+Force Field Mages
+
+Red mage vs Blue mage
+
+11 = HQ
+
+Capturing terrain costs MP
+Return to your HQ to restore MP (10 + conquered terrain beside HQ)
+Maintaining force fields above 5 costs ELECTRICITY
+Reducing force fields below 5 gives ELECTRICITY
+
+You lose when you run out of electricity or your HQ is conquered.
+
+In your turn you can:
+Move with cursor
+Set level
+ - "`" = 0
+ - "1-9" = 1-9
+ - "0" = 10
+Pass with space
+
+To do:
+-AI
